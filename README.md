@@ -8,6 +8,6 @@ Daily active-recall tracker for the **Electronics Engineering (ECE) Licensure Ex
 - **Subjects** — edit the required topics (paste a list, one per line), optional subtopics, mark topics as mastered ★.
 - **Settings** — exam date, quotes, export/import backup.
 
-- **Cloud sync** — sign in with Google (Settings, or the ☁ button) and progress stays the same on phone and laptop. Works offline and syncs when back online.
+- **Cloud sync** — log in with the password once per device (Settings, or the 🔒 button) and progress stays the same on phone and laptop. Works offline and syncs when back online.
 
-No build step: host it with GitHub Pages (`https://rcini19.github.io/parakaybibi/`). Each device keeps a working copy in localStorage; [sync.js](sync.js) mirrors it to Firestore (`trackers/{uid}`) in the `forbibi-88a25` Firebase project, where the security rules only let each person read and write their own document. Google sign-in only works on authorized domains (`localhost` and `rcini19.github.io`), so opening `index.html` straight from disk won't sync.
+No build step: host it with GitHub Pages (`https://rcini19.github.io/parakaybibi/`). Each device keeps a working copy in localStorage; [sync.js](sync.js) mirrors it to Firestore (`trackers/{uid}`) in the `forbibi-88a25` Firebase project, where the security rules only let each account read and write its own document. There's a single email/password account (`bibi@forbibi-88a25.firebaseapp.com`, created in the Firebase console with sign-ups turned off); the page only asks for its password.

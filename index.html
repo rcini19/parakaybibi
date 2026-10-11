@@ -8,8 +8,23 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  <script>
+    // Show the password screen unless this device is already logged in (sync.js keeps this flag up to date).
+    try { if (localStorage.getItem('ece-tracker.v1.auth') !== '1') document.documentElement.classList.add('locked'); }
+    catch (e) { document.documentElement.classList.add('locked'); }
+  </script>
 </head>
 <body>
+  <div class="lock">
+    <form id="loginForm" class="lock-box" autocomplete="on">
+      <label for="loginPw">PASSWORD</label>
+      <input type="text" name="username" value="bibi" autocomplete="username" hidden>
+      <input type="password" id="loginPw" class="box" autocomplete="current-password" required autofocus>
+      <button class="btn dark" type="submit" id="loginBtn">ENTER</button>
+      <p class="sync-err" id="loginErr"></p>
+    </form>
+  </div>
+
   <div class="wrap">
     <!-- Clock -->
     <header class="top">

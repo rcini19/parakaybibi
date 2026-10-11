@@ -1,11 +1,12 @@
 /* Cloud sync — keeps the tracker the same on phone and laptop.
-   She signs in with Google; her data lives in Firestore at trackers/{her uid}, which the
-   Firestore rules let only her read or write. This browser's localStorage stays the working
+   She logs in with a password only. Behind it is one Firebase email/password account
+   (LOGIN_EMAIL, created in the Firebase console with sign-ups turned off), and her data
+   lives in Firestore at trackers/{that account's uid}, which the rules let only it read or write. This browser's localStorage stays the working
    copy, so the tracker still works offline and syncs when it's back online. */
 
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import {
-  getAuth, GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signInWithRedirect, signOut,
+  getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut,
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
   getFirestore, doc, onSnapshot, runTransaction, serverTimestamp,
@@ -20,6 +21,9 @@ const firebaseConfig = {
   messagingSenderId: '487107955045',
   appId: '1:487107955045:web:c185b7e265ced38e45b98c',
 };
+
+// The one account allowed in. It's never shown — the page only asks for the password.
+const LOGIN_EMAIL = 'bibi@forbibi-88a25.firebaseapp.com';
 
 const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
@@ -49,7 +53,8 @@ let editSeq = 0;          // bumps on every local change, so edits made mid-push
 let pushTimer = null;
 let pushing = false;
 let pushAgain = false;
-let heldSnap = null;      // a cloud update that arrived mid-push; handled once the push settles
+let heldSnap = null;       // a cloud update that arrived mid-push; handled once the push settles
+const AUTH_FLAG = STORE_KEY + '.auth'; // lets index.html skip the password screen on a logged-in device
 
 /* ---------- status UI ---------- */
 const pill = document.getElementById('syncStatus');
@@ -58,7 +63,7 @@ function setStatus(s, err = '') {
   status = s; errorText = err;
   const text = {
     loading: '☁ …',
-    'signed-out': '☁ Sign in to sync',
+    'signed-out': '🔒 Logged out',
     syncing: '☁ Syncing…',
     synced: '☁ Synced',
     offline: '☁ Offline · saved on this device',
@@ -75,19 +80,13 @@ function setStatus(s, err = '') {
 window.renderSyncPanel = () => {
   const el = document.getElementById('syncPanel');
   if (!el) return;
-  if (!user) {
-    el.innerHTML = `
-      <p class="muted" style="margin:0 0 10px">Sign in with Google so your progress is the same on your phone and laptop.</p>
-      <div class="actions"><button class="btn dark" data-a="sync-signin">SIGN IN WITH GOOGLE</button></div>
-      ${errorText ? `<p class="sync-err">${esc(errorText)}</p>` : ''}`;
-    return;
-  }
+  if (!user) { el.innerHTML = '<p class="muted" style="margin:0">Not logged in.</p>'; return; }
   const when = lastSynced ? ` · last synced ${lastSynced.toLocaleTimeString()}` : '';
   el.innerHTML = `
-    <p style="margin:0 0 10px">Signed in as <b>${esc(user.email || user.displayName || 'you')}</b><span class="muted">${when}</span></p>
+    <p style="margin:0 0 10px">✓ Logged in<span class="muted">${when}</span></p>
     <div class="actions">
       <button class="btn" data-a="sync-now">SYNC NOW</button>
-      <button class="btn" data-a="sync-signout">SIGN OUT</button>
+      <button class="btn" data-a="sync-signout">LOG OUT</button>
     </div>
     ${status === 'error' ? `<p class="sync-err">${esc(errorText)}</p>` : ''}`;
 };
@@ -164,9 +163,9 @@ function onRemote(snap) {
 
   // both this device and the cloud changed — let her choose
   const useCloud = confirm(
-    'Your account has progress from another device, and this device also has changes that weren\'t synced yet.\n\n' +
-    'OK = use the progress saved in your account (recommended)\n' +
-    'Cancel = keep this device\'s version and overwrite your account'
+    'The cloud has progress from your other device, and this device also has changes that weren\'t synced yet.\n\n' +
+    'OK = use the progress saved in the cloud (recommended)\n' +
+    'Cancel = keep this device\'s version and overwrite the cloud'
   );
   if (useCloud) { applyRemote(json, version); setStatus('synced'); }
   else { meta.version = version; saveMeta(); push(); }
@@ -183,6 +182,7 @@ function fail(e) {
 onAuthStateChanged(auth, u => {
   if (unsubscribe) { unsubscribe(); unsubscribe = null; }
   user = u;
+  lock(!u);
   if (!u) { ref = null; setStatus('signed-out'); return; }
   if (meta.uid !== u.uid) {   // a different account than this device last synced with
     meta.uid = u.uid;
@@ -194,35 +194,54 @@ onAuthStateChanged(auth, u => {
   unsubscribe = onSnapshot(ref, onRemote, fail);
 });
 
-async function signIn() {
-  const provider = new GoogleAuthProvider();
-  provider.setCustomParameters({ prompt: 'select_account' });
+/* ---------- password screen ---------- */
+function lock(on) {
+  document.documentElement.classList.toggle('locked', on);
+  try { if (on) localStorage.removeItem(AUTH_FLAG); else localStorage.setItem(AUTH_FLAG, '1'); } catch (e) { /* ignore */ }
+  if (on) setTimeout(() => document.getElementById('loginPw')?.focus(), 0);
+}
+
+async function logIn(password) {
+  const btn = document.getElementById('loginBtn'), err = document.getElementById('loginErr');
+  btn.disabled = true; btn.textContent = '…'; err.textContent = '';
   try {
-    await signInWithPopup(auth, provider);
+    await signInWithEmailAndPassword(auth, LOGIN_EMAIL, password);
+    document.getElementById('loginPw').value = '';
   } catch (e) {
-    if (e.code === 'auth/popup-blocked' || e.code === 'auth/operation-not-supported-in-this-environment') {
-      await signInWithRedirect(auth, provider);
-    } else if (e.code !== 'auth/popup-closed-by-user' && e.code !== 'auth/cancelled-popup-request') {
-      setStatus('signed-out', `Sign-in failed: ${e.message}`);
-    }
+    err.textContent = {
+      'auth/invalid-credential': 'Wrong password.',
+      'auth/wrong-password': 'Wrong password.',
+      'auth/invalid-login-credentials': 'Wrong password.',
+      'auth/user-not-found': "The login account isn't set up in Firebase yet.",
+      'auth/too-many-requests': 'Too many tries — wait a few minutes and try again.',
+      'auth/network-request-failed': 'No internet connection.',
+      'auth/operation-not-allowed': "Password login isn't turned on in Firebase yet.",
+    }[e.code] || `Couldn't log in: ${e.message}`;
+    document.getElementById('loginPw').select();
+  } finally {
+    btn.disabled = false; btn.textContent = 'ENTER';
   }
 }
+
+document.getElementById('loginForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const pw = document.getElementById('loginPw').value;
+  if (pw) logIn(pw);
+});
 
 document.addEventListener('click', e => {
   const el = e.target.closest('[data-a]');
   if (!el) return;
   switch (el.dataset.a) {
-    case 'sync-signin': signIn(); break;
     case 'sync-signout':
-      if (confirm('Sign out? Your progress stays on this device and in your account.')) signOut(auth);
+      if (confirm("Log out? You'll need the password to open the tracker again.")) signOut(auth);
       break;
     case 'sync-now':
       if (meta.dirty) push();
       else if (ref) { if (unsubscribe) unsubscribe(); setStatus('syncing'); unsubscribe = onSnapshot(ref, onRemote, fail); }
       break;
     case 'sync-pill':
-      if (!user) signIn();
-      else { state.ui.tab = 'settings'; saveLocal(); render(); }
+      state.ui.tab = 'settings'; saveLocal(); render();
       break;
   }
 });
