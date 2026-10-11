@@ -335,6 +335,39 @@ const COLORS = {
   gray:   { fill: '#e3e3e3', ink: '#444444' },
 };
 
+// Subject colors in dark mode: deep tinted fills with light text.
+const COLORS_DARK = {
+  blue:   { fill: '#16324a', ink: '#8cc4f0' },
+  slate:  { fill: '#1f3339', ink: '#9cc5d0' },
+  green:  { fill: '#1d3a22', ink: '#93d49c' },
+  amber:  { fill: '#3d3010', ink: '#f0c862' },
+  purple: { fill: '#33224a', ink: '#c9a6ee' },
+  red:    { fill: '#47201c', ink: '#ff9d92' },
+  pink:   { fill: '#45203a', ink: '#f5a3cf' },
+  gray:   { fill: '#2c2c2e', ink: '#c4c4c4' },
+};
+
+/* ---------- light / dark ---------- */
+const THEME_KEY = CONFIG.storageKey + '.theme';
+const darkQuery = window.matchMedia('(prefers-color-scheme: dark)');
+const isDark = () => (document.documentElement.dataset.theme || (darkQuery.matches ? 'dark' : 'light')) === 'dark';
+const colorOf = s => { const pal = isDark() ? COLORS_DARK : COLORS; return pal[s.color] || pal.gray; };
+
+function renderThemeButtons() {
+  document.querySelectorAll('[data-a="theme"]').forEach(b => { b.textContent = isDark() ? '☀ LIGHT' : '☾ DARK'; });
+}
+
+function toggleTheme() {
+  const next = isDark() ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem(THEME_KEY, next); } catch (e) { /* per-device only */ }
+  renderThemeButtons();
+  render();
+}
+
+// if she never picked one, follow the device when it switches (e.g. auto dark at night)
+darkQuery.addEventListener?.('change', () => { if (!document.documentElement.dataset.theme) { renderThemeButtons(); render(); } });
+
 const DEFAULT_QUOTES = CONFIG.quotes;
 
 /* ---------- helpers ---------- */
@@ -565,8 +598,8 @@ function render() {
   window.renderSyncPanel?.();
 }
 
-const chip = s => { const c = COLORS[s.color] || COLORS.gray; return `<span class="chip" style="background:${c.fill};border-color:${c.ink};color:${c.ink}">${esc(s.name)}</span>`; };
-const bar = (s, p, solid) => { const c = COLORS[s.color] || COLORS.gray; return `<div class="bar" style="border-color:${c.ink}"><i style="width:${Math.min(100, p)}%;background:${solid ? c.ink : c.fill}"></i></div>`; };
+const chip = s => { const c = colorOf(s); return `<span class="chip" style="background:${c.fill};border-color:${c.ink};color:${c.ink}">${esc(s.name)}</span>`; };
+const bar = (s, p, solid) => { const c = colorOf(s); return `<div class="bar" style="border-color:${c.ink}"><i style="width:${Math.min(100, p)}%;background:${solid ? c.ink : c.fill}"></i></div>`; };
 
 // itemId -> { s: subject, t: topic, st: subtopic (only when the item is a subtopic) }
 function itemIndex() {
@@ -607,7 +640,7 @@ function viewToday() {
   const groups = state.subjects.map(s => {
     const mine = ids.filter(id => idx[id].s === s);
     if (!mine.length) return '';
-    const c = COLORS[s.color] || COLORS.gray;
+    const c = colorOf(s);
     const rows = mine.map(id => {
       const { t, st } = idx[id];
       const label = st ? `${esc(t.name)} <span class="muted">›</span> ${esc(st.name)}` : esc(t.name);
@@ -625,7 +658,7 @@ function viewToday() {
 
   // ---- picker: choose the topics / subtopics for the day
   const pickers = state.subjects.map(s => {
-    const c = COLORS[s.color] || COLORS.gray;
+    const c = colorOf(s);
     const btn = id => `<button class="pick ${planned.has(id) ? 'on' : ''}" data-a="plan" data-id="${id}">${planned.has(id) ? '✓ ADDED' : '+ ADD'}</button>`;
     const items = s.topics.map(t => `
       <li>
@@ -671,7 +704,7 @@ function viewWeekly() {
   const asOf = isCurrent ? today() : weekEnd;
 
   const rows = state.subjects.map(s => {
-    const c = COLORS[s.color] || COLORS.gray;
+    const c = colorOf(s);
     const st = subjectStats(s, asOf);
     let activeDays = 0;
     const touched = s.topics.filter(tp => days.some(d => topicDoneOn(tp, keyOf(d)))).length;
@@ -755,7 +788,7 @@ function streak() {
 function viewSubjects() {
   const colorOpts = sel => Object.keys(COLORS).map(c => `<option value="${c}" ${c === sel ? 'selected' : ''}>${c}</option>`).join('');
   const subjects = state.subjects.map((s, i) => {
-    const c = COLORS[s.color] || COLORS.gray;
+    const c = colorOf(s);
     const topics = s.topics.map(t => `
       <div class="tp">
         <div class="tp-r">
@@ -854,6 +887,7 @@ document.addEventListener('click', e => {
   const { a, s, t, u, d } = el.dataset;
   switch (a) {
     case 'tab': state.ui.tab = el.dataset.tab; saveLocal(); render(); window.scrollTo({ top: 0 }); break;
+    case 'theme': toggleTheme(); break;
     case 'next-quote': quoteOffset++; renderHeader(); break;
     case 'day': viewDay = +d === 0 ? today() : addDays(viewDay, +d); render(); break;
     case 'week': viewWeek = +d === 0 ? weekStart(today()) : addDays(viewWeek, +d); render(); break;
@@ -993,5 +1027,6 @@ document.addEventListener('keydown', e => {
 });
 
 render();
+renderThemeButtons();
 tickClock();
 setInterval(tickClock, 1000);

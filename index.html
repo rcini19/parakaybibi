@@ -7,8 +7,10 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=6">
+  <link rel="stylesheet" href="style.css?v=7">
   <script>
+    // Light/dark: her saved choice, otherwise the device setting (CSS handles that case).
+    try { const t = localStorage.getItem('ece-tracker.v1.theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}
     // Show the password screen unless this device is already logged in (sync.js keeps this flag up to date).
     try { if (localStorage.getItem('ece-tracker.v1.auth') !== '1') document.documentElement.classList.add('locked'); }
     catch (e) { document.documentElement.classList.add('locked'); }
@@ -16,6 +18,7 @@
 </head>
 <body>
   <div class="lock">
+    <button type="button" class="linkbtn theme-link" data-a="theme"></button>
     <form id="loginForm" class="lock-box" autocomplete="on">
       <label for="loginPw">PASSWORD</label>
       <input type="text" name="username" value="bibi" autocomplete="username" hidden>
@@ -61,13 +64,14 @@
       <button data-a="tab" data-tab="settings">SETTINGS</button>
       <button id="syncStatus" class="sync-pill loading" data-a="sync-pill" title="Cloud sync">☁ …</button>
       <button id="logoutBtn" data-a="sync-signout" hidden>LOG OUT</button>
+      <button id="themeBtn" data-a="theme" title="Switch light / dark"></button>
     </nav>
 
     <main id="view"></main>
   </div>
 
   <div class="toast" id="toast" hidden></div>
-  <script src="app.js?v=6"></script>
-  <script type="module" src="sync.js?v=6"></script>
+  <script src="app.js?v=7"></script>
+  <script type="module" src="sync.js?v=7"></script>
 </body>
 </html>
