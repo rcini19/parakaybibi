@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ECE Review Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="wrap">
+    <!-- Clock -->
+    <header class="top">
+      <div class="cell c-day"><label>DAY</label><div class="box big" id="clkDay">--</div></div>
+      <div class="cell c-month"><label>MONTH</label><div class="box big" id="clkMonth">--</div></div>
+      <div class="cell c-year"><label>YEAR</label><div class="box big" id="clkYear">--</div></div>
+      <div class="cell c-quote"><label>&nbsp;</label><div class="box quote" id="quote" data-a="next-quote" title="Click for another quote"></div></div>
+      <div class="cell c-time"><label>TIME</label><div class="box big" id="clk12">--:--</div></div>
+      <div class="cell c-24"><label>24-HOUR TIME</label><div class="box big" id="clk24">--:--</div></div>
+    </header>
+
+    <!-- Exam countdown -->
+    <section class="countdown">
+      <strong id="examName">ECELE</strong>
+      <span id="examDate"></span>
+      <em id="examLeft"></em>
+    </section>
+
+    <nav class="tabs">
+      <button data-a="tab" data-tab="today">TODAY</button>
+      <button data-a="tab" data-tab="weekly">WEEKLY</button>
+      <button data-a="tab" data-tab="subjects">SUBJECTS</button>
+      <button data-a="tab" data-tab="settings">SETTINGS</button>
+      <button id="syncStatus" class="sync-pill loading" data-a="sync-pill" title="Cloud sync">☁ …</button>
+    </nav>
+
+    <main id="view"></main>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+  <script src="app.js"></script>
+  <script type="module" src="sync.js"></script>
+</body>
+</html>
