@@ -7,6 +7,7 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import {
   getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut,
+  EmailAuthProvider, reauthenticateWithCredential, updatePassword,
 } from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
 import {
   getFirestore, doc, onSnapshot, runTransaction, serverTimestamp,
@@ -74,21 +75,41 @@ function setStatus(s, err = '') {
     pill.className = `sync-pill ${s}`;
     pill.title = err || (lastSynced ? `Last synced ${lastSynced.toLocaleTimeString()}` : '');
   }
+  const out = document.getElementById('logoutBtn');
+  if (out) out.hidden = !user;
   window.renderSyncPanel();
 }
 
 window.renderSyncPanel = () => {
   const el = document.getElementById('syncPanel');
   if (!el) return;
-  if (!user) { el.innerHTML = '<p class="muted" style="margin:0">Not logged in.</p>'; return; }
+  if (!user) { el.innerHTML = '<p class="muted" style="margin:0">Not logged in.</p>'; el.dataset.mode = 'out'; return; }
+
+  // Build the panel once; later status changes only touch the status line,
+  // so a password she's halfway through typing isn't wiped by a sync.
+  if (el.dataset.mode !== 'in') {
+    el.dataset.mode = 'in';
+    el.innerHTML = `
+      <p style="margin:0 0 10px" id="syncLine"></p>
+      <div class="actions">
+        <button class="btn" data-a="sync-now">SYNC NOW</button>
+        <button class="btn" data-a="sync-signout">LOG OUT</button>
+      </div>
+      <p class="sync-err" id="syncErr"></p>
+
+      <h4 class="sub-h">CHANGE PASSWORD</h4>
+      <form class="pw-form pw-change" autocomplete="on">
+        <input type="text" name="username" value="bibi" autocomplete="username" hidden>
+        <input type="password" data-pw="cur" class="field" placeholder="Current password" autocomplete="current-password" required>
+        <input type="password" data-pw="new" class="field" placeholder="New password (6+ characters)" autocomplete="new-password" minlength="6" required>
+        <input type="password" data-pw="new2" class="field" placeholder="Type the new password again" autocomplete="new-password" minlength="6" required>
+        <button class="btn dark" type="submit" data-pw="btn">SET NEW PASSWORD</button>
+        <p class="sync-err" data-pw="msg"></p>
+      </form>`;
+  }
   const when = lastSynced ? ` · last synced ${lastSynced.toLocaleTimeString()}` : '';
-  el.innerHTML = `
-    <p style="margin:0 0 10px">✓ Logged in<span class="muted">${when}</span></p>
-    <div class="actions">
-      <button class="btn" data-a="sync-now">SYNC NOW</button>
-      <button class="btn" data-a="sync-signout">LOG OUT</button>
-    </div>
-    ${status === 'error' ? `<p class="sync-err">${esc(errorText)}</p>` : ''}`;
+  el.querySelector('#syncLine').innerHTML = `✓ Logged in<span class="muted">${when}</span>`;
+  el.querySelector('#syncErr').textContent = status === 'error' ? errorText : '';
 };
 
 /* ---------- local <-> cloud ---------- */
@@ -198,7 +219,7 @@ onAuthStateChanged(auth, u => {
 function lock(on) {
   document.documentElement.classList.toggle('locked', on);
   try { if (on) localStorage.removeItem(AUTH_FLAG); else localStorage.setItem(AUTH_FLAG, '1'); } catch (e) { /* ignore */ }
-  if (on) setTimeout(() => document.getElementById('loginPw')?.focus(), 0);
+  if (on) setTimeout(() => showLockForm(false), 0);
 }
 
 async function logIn(password) {
@@ -223,6 +244,52 @@ async function logIn(password) {
   }
 }
 
+// Works from the password screen (logs in with the current password, then changes it)
+// and from Settings (re-checks the current password, then changes it).
+async function changePassword(form) {
+  const f = k => form.querySelector(`[data-pw="${k}"]`);
+  const cur = f('cur'), nw = f('new'), nw2 = f('new2'), btn = f('btn'), msg = f('msg');
+  const say = (text, ok) => { msg.textContent = text; msg.classList.toggle('ok', !!ok); };
+  if (nw.value !== nw2.value) { say("The new passwords don't match."); nw2.select(); return; }
+  if (nw.value.length < 6) { say('The new password needs at least 6 characters.'); nw.select(); return; }
+  btn.disabled = true; btn.textContent = '…'; say('');
+  try {
+    if (user) await reauthenticateWithCredential(user, EmailAuthProvider.credential(LOGIN_EMAIL, cur.value));
+    else await signInWithEmailAndPassword(auth, LOGIN_EMAIL, cur.value);
+    await updatePassword(auth.currentUser, nw.value);
+    cur.value = nw.value = nw2.value = '';
+    say('Password changed! Use the new one next time you log in on another device.', true);
+    toast('Password changed!');
+  } catch (e) {
+    say({
+      'auth/invalid-credential': 'The current password is wrong.',
+      'auth/wrong-password': 'The current password is wrong.',
+      'auth/invalid-login-credentials': 'The current password is wrong.',
+      'auth/weak-password': 'The new password needs at least 6 characters.',
+      'auth/too-many-requests': 'Too many tries — wait a few minutes and try again.',
+      'auth/network-request-failed': 'No internet connection.',
+    }[e.code] || `Couldn't change the password: ${e.message}`);
+  } finally {
+    btn.disabled = false; btn.textContent = 'SET NEW PASSWORD';
+  }
+}
+
+document.addEventListener('submit', e => {
+  if (!e.target.classList.contains('pw-change')) return;
+  e.preventDefault();
+  changePassword(e.target);
+});
+
+// password screen: switch between "enter password" and "change password"
+function showLockForm(change) {
+  document.getElementById('loginForm').hidden = change;
+  const pw = document.querySelector('.lock .pw-change');
+  pw.reset();
+  pw.querySelector('[data-pw="msg"]').textContent = '';
+  pw.hidden = !change;
+  (change ? pw.querySelector('[data-pw="cur"]') : document.getElementById('loginPw')).focus();
+}
+
 document.getElementById('loginForm').addEventListener('submit', e => {
   e.preventDefault();
   const pw = document.getElementById('loginPw').value;
@@ -233,6 +300,8 @@ document.addEventListener('click', e => {
   const el = e.target.closest('[data-a]');
   if (!el) return;
   switch (el.dataset.a) {
+    case 'lock-pw': showLockForm(true); break;
+    case 'lock-back': showLockForm(false); break;
     case 'sync-signout':
       if (confirm("Log out? You'll need the password to open the tracker again.")) signOut(auth);
       break;

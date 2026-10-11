@@ -1,10 +1,12 @@
 /* ECE Review Tracker — daily active-recall tracker for the Electronics Engineering board exam.
    Everything is saved in this browser's localStorage. Use Settings → Export to back up. */
 
-// ECE Licensure Exam (RA 9292): Math 20%, GEAS 20%, Electronics 30%, EST 30%.
-// This is only the starting list — everything can be edited in the SUBJECTS tab.
+// Topics follow PRC's Table of Specifications for the ECE board exam (EE2022-10).
+// Each subject is 100 items; the number after each topic is how many of those items it covers.
+// Weights: Math 20%, GEAS 20%, Electronics 30%, EST 30%. Everything can still be edited in SUBJECTS.
 const CONFIG = {
   storageKey: 'ece-tracker.v1',
+  syllabus: 'prc-tos-ee2022-10', // bump when the built-in topic list changes; see migrateSyllabus()
   exam: { name: 'ECELE', date: '2027-04-17' },
   quotes: [
     'Future Engr. ka na, review lang ng konti.',
@@ -14,76 +16,308 @@ const CONFIG = {
     'Solve one more problem.',
     "Rest if you must, but don't quit.",
   ],
-  // [name, color, topics] — a topic is a name, or [name, [subtopics]]
+  // [name, color, topics] — a topic is [name, [subtopics], items]
   subjects: [
     ['MATH', 'blue', [
-      'Algebra',
-      'Plane & Spherical Trigonometry',
-      'Analytic Geometry',
-      'Solid Mensuration',
-      ['Differential Calculus', ['Limits', 'Derivatives', 'Maxima & Minima', 'Time Rates']],
-      ['Integral Calculus', ['Techniques of Integration', 'Areas & Volumes', 'Centroids & Moments of Inertia']],
-      'Differential Equations',
-      'Complex Numbers',
-      'Matrices & Determinants',
-      'Vector Analysis',
-      'Probability & Statistics',
-      ['Advanced Engineering Math', ['Laplace Transform', 'Fourier Series & Transform', 'Z-Transform', 'Power Series']],
-      'Numerical Methods',
-      'Discrete Mathematics',
+      ['Differential Calculus', [
+        'Functions, Continuity, and Limits',
+        'Derivatives and Its Applications',
+        'Higher-Order Derivatives',
+        'Parametric Equations',
+        'Partial Differentiation',
+      ], 15],
+      ['Integral Calculus', [
+        'Integration Concepts / Formulas',
+        'Integration Techniques',
+        'Improper Integrals',
+        'Application of Integral',
+        'Multiple Integration and Its Applications',
+      ], 15],
+      ['Differential Equations', [
+        'First-Order, First-Degree ODE and Its Applications',
+        'Higher-Order ODE and Its Applications',
+        'Laplace Transforms, Inverses, and Applications',
+      ], 15],
+      ['Advanced Engineering Mathematics for ECE', [
+        'Complex Numbers and Its Applications',
+        'Series and Transforms (Power Series, Bessel, Legendre, Fourier Series & Transforms)',
+        'Partial Differential Equations',
+        'Simultaneous Linear and Non-Linear Equations',
+        'Numerical Differentiation, Integration, and Optimization',
+      ], 15],
+      ['Engineering Data Analysis', [
+        'Obtaining Data',
+        'Statistical Sampling, Distributions, and Intervals',
+        'Test of Hypothesis',
+        'Regression and Correlation',
+        'Design of Experiments',
+      ], 15],
+      ['Electromagnetics', [
+        'Vector Analysis',
+        'Directional Derivative, Gradient, Divergence, Curl',
+        "Integral Theorems (Green's Lemma, Divergence Theorem, Stokes' Theorem)",
+      ], 9],
+      ['Signals, Spectra & Signal Processing', [
+        'Z-Transforms',
+        'Convolution',
+        'Correlation',
+      ], 8],
+      ['Feedback and Control Systems', [
+        'Pole and Zero Determination',
+        'Transient Response',
+        'Block Diagram and Signal Flow',
+      ], 8],
     ]],
     ['GEAS', 'green', [
-      'General Chemistry',
-      ['College Physics', ['Mechanics', 'Heat', 'Waves & Sound', 'Optics', 'Electricity & Magnetism', 'Modern Physics']],
-      ['Engineering Mechanics', ['Statics', 'Dynamics']],
-      'Strength of Materials',
-      'Fluid Mechanics',
-      'Thermodynamics',
-      'Engineering Materials',
-      'Engineering Economics',
-      'Engineering Management',
-      'Computer Fundamentals & Programming',
-      'Environmental Engineering',
-      ['Laws & Ethics', ['RA 9292 (ECE Law)', 'Contracts & Obligations', 'Code of Ethics', 'Philippine Electronics Code']],
+      ['Chemistry for Engineers', [
+        'Energy',
+        'Chemistry of Engineering Materials',
+        'Chemistry of Nanomaterials',
+        'Chemistry of the Environment',
+        'Special Topics Specific to the Field',
+      ], 10],
+      ['Physics for Engineers', [
+        'Work, Energy, and Power',
+        'Impulse and Momentum',
+        'Kinematics',
+        'Dynamics',
+        'Rotation',
+        'Dynamics of Rotation',
+        'Elasticity',
+        'Oscillations and Waves',
+        'Fluids',
+        'Heat Transfer',
+        'Electrostatics',
+        'Electricity',
+        'Magnetism',
+        'Optics',
+      ], 15],
+      ['Engineering Economics', [
+        'Introduction and Terms',
+        'Money-Time Relationship and Equivalence',
+        'Basic Economy Study Methods',
+        'Decisions Under Certainty',
+        'Decisions Recognizing Risk',
+        'Decisions Admitting Uncertainty',
+      ], 6],
+      ['Engineering Management', [
+        'Evolution of Management Theory',
+        'Management and Its Functions',
+        'Planning',
+        'Leading',
+        'Organizing',
+        'Controlling',
+        'Managing Product and Service Operations',
+        'Managing the Marketing Function',
+        'Managing the Finance Function',
+      ], 9],
+      ['Technopreneurship 101', [
+        'Introduction to Technopreneurship',
+        'Customers',
+        'Value Proposition',
+        'Market Identification and Analysis',
+        'Creating Competitive Advantage',
+        'Business Models',
+        'Introduction to Intellectual Property',
+        'Execution and Business Plan',
+        'Financial Analysis and Accounting Basics',
+        'Raising Capital',
+        'Ethics, Social Responsibility, and Globalization',
+      ], 10],
+      ['Physics 2', [
+        'Thermodynamics',
+        'Electricity',
+        'Magnetism',
+        'EM Induction',
+        'Inductance and AC',
+        'Optics',
+        'Atomic and Nuclear Physics',
+        'Condensed Matter',
+      ], 10],
+      ['Materials Science and Engineering', [
+        'Review of Fundamentals',
+        'Atomic Structure and Interatomic Bonding',
+        'Structure of Crystalline Materials',
+        'Crystalline and Non-Crystalline Materials',
+        'Imperfections in Solids',
+        'Diffusion in Solids',
+        'Mechanical Properties of Metals',
+        'Applications and Processing of Metal Alloys',
+        'Structure and Properties of Ceramics',
+        'Applications and Processing of Ceramics',
+        'Polymer Structures and Properties',
+        'Applications and Processing of Polymers',
+        'Composites',
+        'Electrical Properties',
+        'Dielectric Behavior',
+        'Magnetic Properties',
+        'Optical Properties',
+        'Thermal Properties',
+        'Economic, Environmental, and Societal Issues',
+      ], 8],
+      ['Computer Programming', [
+        'Introduction to Object-Oriented Programming and UML',
+        'Object-Oriented Analysis and Design',
+        'Programming Language Fundamentals',
+        'Advanced Programming Language Fundamentals',
+        'Exception Handling',
+        'Graphical User Interface Programming',
+      ], 10],
+      ['Environmental Science and Engineering', [
+        'Nature and Ecology',
+        'Natural Systems and Resources',
+        'Environmental Concerns and Crises',
+        'Environmental Impact Assessment',
+        'Sustainable Development',
+      ], 10],
+      ['ECE Laws, Contracts, Ethics, Standards & Safety', [
+        'Fundamentals of Laws, Obligations, and Contracts',
+        'Pledge of ECE and CSC Guidelines',
+        'The Board Examination',
+        'Regulating the ECE Profession (PRC)',
+        'Practicing the ECE Profession',
+        'Other ECE-Related Statutes',
+        'Safety Standards',
+        'PEC Codes',
+      ], 10],
+      ['CAD', [
+        'Introduction to CAD Software and Its Environment',
+        'Snapping and Construction Elements',
+        'Dimensioning, Plotting, and Inputting Images',
+      ], 2],
     ]],
     ['ELEX', 'purple', [
-      ['Electrical Circuits', ['DC Circuits', 'AC Circuits', 'Network Theorems', 'Transients', 'Resonance & Filters', 'Three-Phase Systems']],
-      'Solid-State Devices & Semiconductor Physics',
-      ['Electronic Circuits', ['Diode Circuits', 'BJT Amplifiers', 'FET Amplifiers', 'Frequency Response', 'Feedback Amplifiers', 'Oscillators']],
-      'Operational Amplifiers & Linear ICs',
-      'Power Supplies & Regulators',
-      'Power Electronics',
-      ['Digital Electronics', ['Number Systems & Codes', 'Boolean Algebra & K-maps', 'Combinational Logic', 'Sequential Logic', 'Logic Families']],
-      'Microprocessors & Microcontrollers',
-      'Computer Systems & Architecture',
-      'Signals & Systems',
-      'Feedback & Control Systems',
-      'Electromagnetics',
-      'Industrial Electronics',
-      'Instrumentation & Measurements',
+      ['DC Electrical Circuits', [
+        'Resistive Networks',
+        'Mesh and Node Equations',
+        'Network Theorems',
+        'Transient Analysis',
+        'Solution to DC Network Problems',
+      ], 12],
+      ['AC Electrical Circuits', [
+        'Solution to AC Network Problems',
+        'Impedance and Admittance',
+        'Resonance',
+        'Power in AC Circuits',
+        'Two-Port Network Parameters and Transfer Function',
+      ], 12],
+      ['Electromagnetics', [
+        'Steady Electric and Magnetic Fields',
+        'Dielectric and Magnetic Materials',
+        'Coupled and Magnetic Circuits',
+        "Time-Varying Fields and Maxwell's Equations",
+      ], 8],
+      ['Electronic Devices and Circuits', [
+        'Diode Equivalent Circuits',
+        'Diode Wave-Shaping Circuits and Special Diode Applications',
+        'Voltage Multipliers, Power Supply, and Voltage Regulation',
+        'Bipolar Junction Transistor and FET',
+        'BJT and FET Small-Signal Analysis',
+      ], 14],
+      ['Electronic Circuit Analysis and Design', [
+        'BJT and FET Frequency Response',
+        'Cascade and Cascode Connections',
+        'Current Mirrors and Current Sources',
+        'Differential and Operational Amplifiers',
+        'Feedback Systems, Oscillators, and Filters',
+      ], 14],
+      ['Electronic Systems and Design', [
+        'SCRs, UJT, PUT, TRIAC, DIAC, and Other Thyristors',
+        'Optoelectronic Devices and Sensors',
+        'Transducers, Data Acquisition, and Interfacing Techniques',
+        'Programmable Logic Controllers',
+        'Building Management Systems (HVAC, Security & Surveillance, Audio-Video & Lighting Controls)',
+      ], 8],
+      ['Logic Circuits and Switching Theory', [
+        'Boolean Algebra and Logic Gates',
+        'Minimization of Combinational Logic Circuits',
+        'Sequential Logic Circuits',
+        'Algorithmic State Machine (ASM)',
+        'Asynchronous Sequential Logic',
+      ], 12],
+      ['Microprocessor & Microcontroller Systems and Design', [
+        'Microprocessor Unit',
+        'Memory Subsystem',
+        'I/O Subsystem',
+        'Instruction Set Architecture and Assembly Programming',
+        'Microcontrollers',
+      ], 12],
+      ['Feedback and Control Systems', [
+        'Block Diagram Representation and Signal Flow Graphs',
+        'LTI Systems and Transient Analysis',
+        'System Modeling and Transfer Function',
+        'Poles and Zeros, Root Locus, and Stability Analysis',
+        'Steady-State Analysis and Frequency Response',
+      ], 8],
     ]],
     ['EST', 'amber', [
-      'Principles of Communication & Noise',
-      ['Amplitude Modulation', ['DSB-FC', 'DSB-SC', 'SSB', 'AM Receivers']],
-      ['Angle Modulation', ['FM', 'PM', 'FM Receivers']],
-      'Pulse Modulation & PCM',
-      'Digital & Data Communications',
-      'Multiplexing (FDM / TDM / WDM)',
-      'Information Theory & Coding',
-      'Transmission Lines',
-      'Waveguides',
-      'Antennas',
-      'Radio Wave Propagation',
-      'Microwave Communications',
-      'Satellite Communications',
-      'Fiber Optic Communications',
-      'Broadcasting (AM, FM, TV)',
-      'Telephony',
-      'Cellular & Wireless Communications',
-      'Data Networks (OSI, TCP/IP)',
-      'Acoustics',
-      'Navigational Aids & Radar',
-      'Telecom Laws & Regulations (RA 7925, NTC)',
+      ['Signals, Spectra & Signal Processing', [
+        'Classification and Characteristics of Signals',
+        'Sampling Theorem and Aliasing',
+        'Difference Equations for FIR and IIR Filters',
+        'Convolution and Correlation',
+        'Z-Transforms',
+        'Pole-Zero-Gain Filters',
+        'Fourier Transforms',
+        'Filtering (FIR / IIR)',
+      ], 10],
+      ['Principles of Communications', [
+        'Introduction to Communications Systems',
+        'Noise',
+        'Amplitude Modulation',
+        'Single-Sideband Techniques',
+        'Frequency Modulation',
+        'Radio Receivers',
+        'Radiation and Propagation of Waves',
+        'Pulse Modulation',
+        'Digital Modulation',
+        'Broadband Communication Systems',
+      ], 25],
+      ['Digital Communications', [
+        'Introduction to Digital Communications Systems',
+        'Digital Transmission',
+        'PAM, PWM, PPM, and Pulse Code Modulation',
+        'ASK, FSK, PSK, and QAM',
+        'Basics of Information Theory',
+        'Error Detection',
+        'FDM, TDM, WDM, FDMA, CDMA, TDMA',
+      ], 15],
+      ['Transmission and Antenna Systems', [
+        'Transmission Line Circuits',
+        'Losses and Parameters',
+        'Transmission Line Matching',
+        'Smith Chart',
+        'Radio Wave Propagation',
+        'Power Density and Field Strength Calculations',
+        'Antenna Systems',
+        'Waveguides',
+        'Fiber Optics',
+      ], 23],
+      ['Electronics 3: Electronic Systems and Design', [
+        'SCRs, UJT, PUT, TRIAC, DIAC, and Other Thyristors',
+        'Optoelectronic Devices and Sensors',
+        'Transducers',
+        'Interfacing Techniques',
+        'Programmable Logic Controllers',
+        'Building Management Systems (HVAC, Security & Surveillance, Audio-Video, Lighting, SCADA, Fire & Life Safety)',
+      ], 7],
+      ['Data Communications', [
+        'Introduction to Data Communications',
+        'Categories of Data Communication',
+        'Configurations and Network Topology',
+        'Transmission Modes',
+        'Two-Wire vs. Four-Wire Circuits',
+        'Types of Synchronization',
+        'Network Components (Terminal, Multiplexer, Concentrators)',
+        'Network Components (LCU, FEP, Serial Interface)',
+        'Security and Cryptography',
+        'Open Systems Interconnection (OSI)',
+        'Systems Network Architecture (SNA)',
+        'TCP/IP Architecture',
+        'Character-Oriented Protocols',
+        'Bit-Oriented Protocols',
+        'LAN / MAN / WAN / GAN, ISDN / B-ISDN',
+      ], 20],
     ]],
   ],
 };
@@ -123,15 +357,73 @@ const STALE_DAYS = 14; // a topic not reviewed for this long shows up as "needs 
 const agoText = n => n === Infinity ? 'never' : n === 0 ? 'today' : n === 1 ? 'yesterday' : `${n}d ago`;
 
 /* ---------- state ---------- */
+// Built-in subjects/topics get ids derived from their names, so every device (and every
+// migration) produces the same ids and cloud sync lines up. Topics she adds herself use uid().
+function stableId(path) {
+  let h1 = 0x811c9dc5, h2 = 0x01000193;
+  for (let i = 0; i < path.length; i++) {
+    const c = path.charCodeAt(i);
+    h1 = Math.imul(h1 ^ c, 0x01000193);
+    h2 = Math.imul(h2 ^ c, 0x811c9dc5);
+  }
+  return 'b' + (h1 >>> 0).toString(36) + (h2 >>> 0).toString(36);
+}
+
+function builtInSubjects() {
+  return CONFIG.subjects.map(([sName, color, topics]) => ({
+    id: stableId(sName), name: sName, color,
+    topics: topics.map(t => {
+      const [name, subs = [], items] = Array.isArray(t) ? t : [t];
+      const path = `${sName}|${name}`;
+      return {
+        id: stableId(path), name, mastered: false, ...(items ? { items } : {}),
+        subtopics: subs.map(n => ({ id: stableId(`${path}|${n}`), name: n })),
+      };
+    }),
+  }));
+}
+
+// Switch saved data to the current built-in topic list, keeping her history:
+// ticks, plans and ★ move over by name, and anything she studied that's no longer
+// in the list is kept (added back under its subject) so no progress disappears.
+function migrateSyllabus(s) {
+  const fresh = builtInSubjects();
+  const key = x => String(x).trim().toLowerCase();
+  const remap = {};
+  const studied = new Set([
+    ...Object.values(s.log).flatMap(d => Object.keys(d)),
+    ...Object.values(s.plan).flat(),
+  ]);
+  const touched = t => t.mastered || studied.has(t.id) || t.subtopics.some(x => studied.has(x.id));
+
+  for (const old of s.subjects) {
+    const ns = fresh.find(f => key(f.name) === key(old.name));
+    if (!ns) { if (old.topics.some(touched)) fresh.push(old); continue; }
+    for (const ot of old.topics) {
+      const nt = ns.topics.find(t => key(t.name) === key(ot.name));
+      if (!nt) { if (touched(ot)) ns.topics.push(ot); continue; }
+      remap[ot.id] = nt.id;
+      nt.mastered = nt.mastered || ot.mastered;
+      for (const os of ot.subtopics) {
+        const nsub = nt.subtopics.find(x => key(x.name) === key(os.name));
+        if (nsub) remap[os.id] = nsub.id;
+        else if (studied.has(os.id)) nt.subtopics.push(os);
+      }
+    }
+  }
+  const move = id => remap[id] || id;
+  for (const k of Object.keys(s.log)) s.log[k] = Object.fromEntries(Object.keys(s.log[k]).map(id => [move(id), true]));
+  for (const k of Object.keys(s.plan)) s.plan[k] = [...new Set(s.plan[k].map(move))];
+  s.subjects = fresh;
+  s.syllabus = CONFIG.syllabus;
+}
+
 function seed() {
-  const topic = t => {
-    const [name, subs = []] = Array.isArray(t) ? t : [t];
-    return { id: uid(), name, mastered: false, subtopics: subs.map(n => ({ id: uid(), name: n })) };
-  };
   return {
+    syllabus: CONFIG.syllabus,
     exam: { ...CONFIG.exam },
     quotes: DEFAULT_QUOTES,
-    subjects: CONFIG.subjects.map(([name, color, topics]) => ({ id: uid(), name, color, topics: topics.map(topic) })),
+    subjects: builtInSubjects(),
     log: {},           // { 'YYYY-MM-DD': { itemId: true } }  — what was actually studied
     plan: {},          // { 'YYYY-MM-DD': [itemId, ...] }       — what she picked to study that day
     ui: { tab: 'today' },
@@ -163,6 +455,7 @@ function normalize(s) {
   s.log = s.log || {};
   s.plan = s.plan || {};
   s.ui = s.ui || { tab: 'today' };
+  if (s.syllabus !== CONFIG.syllabus) migrateSyllabus(s);
   return s;
 }
 
@@ -336,7 +629,7 @@ function viewToday() {
     const btn = id => `<button class="pick ${planned.has(id) ? 'on' : ''}" data-a="plan" data-id="${id}">${planned.has(id) ? '✓ ADDED' : '+ ADD'}</button>`;
     const items = s.topics.map(t => `
       <li>
-        <div class="row">${btn(t.id)}<span class="pname">${esc(t.name)}</span>${ago(t)}${star(t)}</div>
+        <div class="row">${btn(t.id)}<span class="pname">${esc(t.name)}${t.items ? ` <span class="items" title="Items in the exam (out of 100)">${t.items} items</span>` : ''}</span>${ago(t)}${star(t)}</div>
         ${t.subtopics.length ? `<ul>${t.subtopics.map(st => `<li><div class="row">${btn(st.id)}<span class="pname">${esc(st.name)}</span></div></li>`).join('')}</ul>` : ''}
       </li>`).join('');
     const inPlan = ids.filter(id => idx[id].s === s).length;
@@ -515,7 +808,7 @@ function viewSettings() {
       <textarea id="setQuotes" rows="7">${esc(state.quotes.join('\n'))}</textarea></label>
     <div class="actions"><button class="btn dark" data-a="save-settings">SAVE SETTINGS</button></div>
 
-    <h3 style="margin-top:20px">CLOUD SYNC</h3>
+    <h3 style="margin-top:20px">ACCOUNT &amp; SYNC</h3>
     <div id="syncPanel"><p class="muted" style="margin:0">Loading…</p></div>
 
     <h3 style="margin-top:20px">BACKUP</h3>

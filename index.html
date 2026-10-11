@@ -7,7 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=6">
   <script>
     // Show the password screen unless this device is already logged in (sync.js keeps this flag up to date).
     try { if (localStorage.getItem('ece-tracker.v1.auth') !== '1') document.documentElement.classList.add('locked'); }
@@ -22,6 +22,17 @@
       <input type="password" id="loginPw" class="box" autocomplete="current-password" required autofocus>
       <button class="btn dark" type="submit" id="loginBtn">ENTER</button>
       <p class="sync-err" id="loginErr"></p>
+      <button type="button" class="linkbtn" data-a="lock-pw">Change password</button>
+    </form>
+    <form class="lock-box pw-change" autocomplete="on" hidden>
+      <label>CHANGE PASSWORD</label>
+      <input type="text" name="username" value="bibi" autocomplete="username" hidden>
+        <input type="password" data-pw="cur" class="box sm" placeholder="Current password" autocomplete="current-password" required>
+        <input type="password" data-pw="new" class="box sm" placeholder="New password (6+ characters)" autocomplete="new-password" minlength="6" required>
+        <input type="password" data-pw="new2" class="box sm" placeholder="Type the new password again" autocomplete="new-password" minlength="6" required>
+        <button class="btn dark" type="submit" data-pw="btn">SET NEW PASSWORD</button>
+        <p class="sync-err" data-pw="msg"></p>
+      <button type="button" class="linkbtn" data-a="lock-back">‹ Back</button>
     </form>
   </div>
 
@@ -49,13 +60,14 @@
       <button data-a="tab" data-tab="subjects">SUBJECTS</button>
       <button data-a="tab" data-tab="settings">SETTINGS</button>
       <button id="syncStatus" class="sync-pill loading" data-a="sync-pill" title="Cloud sync">☁ …</button>
+      <button id="logoutBtn" data-a="sync-signout" hidden>LOG OUT</button>
     </nav>
 
     <main id="view"></main>
   </div>
 
   <div class="toast" id="toast" hidden></div>
-  <script src="app.js"></script>
-  <script type="module" src="sync.js"></script>
+  <script src="app.js?v=6"></script>
+  <script type="module" src="sync.js?v=6"></script>
 </body>
 </html>

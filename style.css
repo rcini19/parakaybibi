@@ -262,3 +262,21 @@ html.locked .lock {
 .lock-box .box:focus { box-shadow: 0 0 0 3px #d9d9d4; }
 .lock-box .btn { padding: 12px; }
 .lock-box .sync-err { text-align: center; min-height: 1em; margin: 0; }
+
+/* ---------- Account ---------- */
+.sub-h { font-size: 12px; letter-spacing: .05em; margin: 22px 0 10px; }
+.pw-form { display: grid; gap: 8px; max-width: 360px; }
+.pw-form .btn { justify-self: start; }
+.pw-form .sync-err { margin: 0; }
+.sync-err.ok { color: var(--strong); }
+#logoutBtn { font-weight: 400; font-size: 12px; }
+
+.lock-box[hidden] { display: none; }
+.lock-box .box.sm { height: 44px; font-size: 15px; }
+.lock-box .pw-change .btn, .lock-box > .btn { justify-self: stretch; }
+.linkbtn {
+  background: none; border: none; padding: 4px; cursor: pointer;
+  color: var(--muted); font-size: 12px; text-decoration: underline; justify-self: center;
+}
+.linkbtn:hover { color: var(--ink); }
+.pname .items { font-size: 11px; color: var(--muted); white-space: nowrap; }

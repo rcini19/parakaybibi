@@ -1,6 +1,6 @@
 # parakaybibi
 
-Daily active-recall tracker for the **Electronics Engineering (ECE) Licensure Exam** — Mathematics, GEAS, Electronics, and Electronic Systems & Technologies, with the full topic scope preloaded.
+Daily active-recall tracker for the **Electronics Engineering (ECE) Licensure Exam** — Mathematics, GEAS, Electronics, and Electronic Systems & Technologies, with every topic and subtopic from PRC's Table of Specifications (EE2022-10) preloaded, including how many of the 100 exam items each topic covers.
 
 - **Clock** at the top — day / month / year, rotating motivational quote, 12h and 24h time, exam countdown.
 - **Today** — pick only the topics / subtopics to study that day, then tick each one after active recall. Unfinished items can be carried over to the next day. Shows how long ago each topic was last reviewed and flags subjects not touched in the last 7 days.
